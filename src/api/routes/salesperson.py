@@ -35,6 +35,8 @@ async def get_salesperson_customers(
     """
     Get customers assigned to the authenticated salesperson.
     Requires salesperson authentication via header or query param.
+
+    Optimized to use a single query with LEFT JOINs to avoid N+1 problem.
     """
     # Security: Require salesperson_id for non-admin access
     # In production, verify against JWT claims
@@ -44,71 +46,82 @@ async def get_salesperson_customers(
             detail="Salesperson authentication required. Provide X-Salesperson-ID header."
         )
 
-    # Filter by authenticated salesperson only
-    query = select(Customer).where(
+    today = date.today()
+
+    # Optimized: Single query with LEFT JOINs and aggregations
+    # This replaces N queries (one per customer) with just one query
+    query = select(
+        Customer.id,
+        Customer.epicor_customer_id,
+        Customer.name,
+        Customer.credit_limit,
+        Customer.status,
+        func.coalesce(func.sum(Invoice.open_balance), 0).label('total_balance'),
+        func.coalesce(
+            func.sum(
+                case(
+                    (Invoice.due_date < today, Invoice.open_balance),
+                    else_=0
+                )
+            ), 0
+        ).label('past_due'),
+        func.coalesce(
+            func.max(
+                case(
+                    (Invoice.open_balance > 0,
+                     func.extract('day', func.current_date() - Invoice.invoice_date)),
+                    else_=0
+                )
+            ), 0
+        ).label('oldest_days'),
+        func.count(Alert.id).label('alert_count'),
+        func.coalesce(
+            func.sum(case((Alert.severity == 'Critical', 1), else_=0)), 0
+        ).label('critical_alerts')
+    ).select_from(Customer).outerjoin(
+        Invoice,
+        and_(
+            Invoice.customer_id == Customer.id,
+            Invoice.open_balance > 0
+        )
+    ).outerjoin(
+        Alert,
+        and_(
+            Alert.customer_id == Customer.id,
+            Alert.status == 'active'
+        )
+    ).where(
         Customer.salesperson_id == current_salesperson,
         Customer.status == 'Active'
+    ).group_by(
+        Customer.id,
+        Customer.epicor_customer_id,
+        Customer.name,
+        Customer.credit_limit,
+        Customer.status
     ).order_by(Customer.name)
 
     result = await db.execute(query)
-    customers = result.scalars().all()
+    rows = result.all()
 
     customer_summaries = []
-    today = date.today()
-
-    for customer in customers:
-        # Get invoice stats
-        inv_result = await db.execute(
-            select(
-                func.sum(Invoice.open_balance).label('total_balance'),
-                func.sum(
-                    case(
-                        (Invoice.due_date < today, Invoice.open_balance),
-                        else_=0
-                    )
-                ).label('past_due'),
-                func.max(
-                    case(
-                        (Invoice.open_balance > 0,
-                         func.extract('day', func.current_date() - Invoice.invoice_date)),
-                        else_=0
-                    )
-                ).label('oldest_days')
-            ).where(
-                Invoice.customer_id == customer.id,
-                Invoice.open_balance > 0
-            )
-        )
-        inv_stats = inv_result.one()
-
-        # Get alert counts
-        alert_result = await db.execute(
-            select(
-                func.count(Alert.id).label('total'),
-                func.sum(case((Alert.severity == 'Critical', 1), else_=0)).label('critical')
-            ).where(
-                Alert.customer_id == customer.id,
-                Alert.status == 'active'
-            )
-        )
-        alert_stats = alert_result.one()
-
-        current_balance = float(inv_stats.total_balance or 0)
-        credit_limit = float(customer.credit_limit or 0)
+    for row in rows:
+        current_balance = float(row.total_balance)
+        credit_limit = float(row.credit_limit or 0)
         credit_utilization = round((current_balance / credit_limit * 100), 1) if credit_limit > 0 else 0
 
         customer_summaries.append({
-            "id": customer.id,
-            "epicor_customer_id": customer.epicor_customer_id,
-            "name": customer.name,
+            "id": row.id,
+            "epicor_customer_id": row.epicor_customer_id,
+            "name": row.name,
             "current_balance": current_balance,
             "credit_limit": credit_limit,
             "credit_utilization": credit_utilization,
-            "past_due_amount": float(inv_stats.past_due or 0),
-            "oldest_invoice_days": int(inv_stats.oldest_days or 0),
-            "alert_count": int(alert_stats.total or 0),
-            "has_critical_alert": (alert_stats.critical or 0) > 0,
-            "status": customer.status,
+            "past_due_amount": float(row.past_due),
+            "oldest_invoice_days": int(row.oldest_days),
+            "alert_count": int(row.alert_count),
+            "has_critical_alert": int(row.critical_alerts) > 0,
+            "status": row.status,
             "last_contact_date": None  # Would come from notes
         })
 
