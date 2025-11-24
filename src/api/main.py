@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import logging
 import os
 
-from src.api.routes import customers, invoices, payments, notes, alerts, tasks, auth, dashboard, reports, email, imports
+from src.api.routes import customers, invoices, payments, notes, alerts, tasks, auth, dashboard, reports, email, imports, promises, salesperson, notifications
 from src.db.connection import init_db, close_db
 from src.data_pipeline.scheduler.import_scheduler import get_scheduler
 
@@ -103,6 +103,9 @@ app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"]
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(email.router, prefix="/api/email", tags=["Email"])
 app.include_router(imports.router, prefix="/api/imports", tags=["Imports"])
+app.include_router(promises.router, prefix="/api/promises", tags=["Promises"])
+app.include_router(salesperson.router, prefix="/api/salesperson", tags=["Salesperson Portal"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
 
 if __name__ == "__main__":
