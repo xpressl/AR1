@@ -7,8 +7,9 @@ from contextlib import asynccontextmanager
 import logging
 import os
 
-from src.api.routes import customers, invoices, payments, notes, alerts, tasks, auth, dashboard, reports
+from src.api.routes import customers, invoices, payments, notes, alerts, tasks, auth, dashboard, reports, email, imports
 from src.db.connection import init_db, close_db
+from src.data_pipeline.scheduler.import_scheduler import get_scheduler
 
 # Configure logging
 logging.basicConfig(
@@ -25,9 +26,24 @@ async def lifespan(app: FastAPI):
     logger.info("Starting AR Control Hub API...")
     await init_db()
     logger.info("Database connection initialized")
+
+    # Start import scheduler if enabled
+    if os.getenv("ENABLE_SCHEDULER", "false").lower() == "true":
+        scheduler = get_scheduler()
+        await scheduler.start()
+        logger.info("Import scheduler started")
+
     yield
+
     # Shutdown
     logger.info("Shutting down AR Control Hub API...")
+
+    # Stop scheduler if running
+    if os.getenv("ENABLE_SCHEDULER", "false").lower() == "true":
+        scheduler = get_scheduler()
+        await scheduler.stop()
+        logger.info("Import scheduler stopped")
+
     await close_db()
     logger.info("Database connection closed")
 
@@ -85,6 +101,8 @@ app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["Tasks"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
+app.include_router(email.router, prefix="/api/email", tags=["Email"])
+app.include_router(imports.router, prefix="/api/imports", tags=["Imports"])
 
 
 if __name__ == "__main__":
