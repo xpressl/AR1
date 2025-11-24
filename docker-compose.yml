@@ -1,76 +1,144 @@
+# ==============================================================================
+# AR Control Hub - Docker Compose (Development)
+# ==============================================================================
+# Usage:
+#   docker-compose up -d              # Start all services
+#   docker-compose up -d --build      # Rebuild and start
+#   docker-compose logs -f backend    # View backend logs
+#   docker-compose down               # Stop all services
+#   docker-compose down -v            # Stop and remove volumes
+# ==============================================================================
+
 version: '3.8'
 
 services:
+  # ============================================================================
   # PostgreSQL Database
+  # ============================================================================
   postgres:
     image: postgres:14-alpine
-    container_name: ar_postgres
+    container_name: ar_postgres_dev
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ar_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ar_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ar_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-ar_control_hub}
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./src/db/migrations:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ar_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ar_user} -d ${POSTGRES_DB:-ar_control_hub}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    networks:
+      - ar_network
 
-  # Redis for caching and queues
+  # ============================================================================
+  # Redis Cache and Message Queue
+  # ============================================================================
   redis:
     image: redis:7-alpine
-    container_name: ar_redis
-    ports:
-      - "6379:6379"
+    container_name: ar_redis_dev
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
+    networks:
+      - ar_network
 
-  # Backend API
+  # ============================================================================
+  # Backend API (Development with Hot Reload)
+  # ============================================================================
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: ar_backend
+      target: runner
+    container_name: ar_backend_dev
+    # Override CMD for development with hot reload
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-ar_user}:${POSTGRES_PASSWORD:-ar_password}@postgres:5432/${POSTGRES_DB:-ar_control_hub}
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ar_user}:${POSTGRES_PASSWORD:-ar_dev_password}@postgres:5432/${POSTGRES_DB:-ar_control_hub}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-ar_control_hub}
+      POSTGRES_USER: ${POSTGRES_USER:-ar_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ar_dev_password}
+      # Redis
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
+      # Application
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-24}
+      API_PORT: 8000
+      # CORS (allow frontend in development)
+      CORS_ORIGINS: http://localhost:3000,http://frontend:3000
+    volumes:
+      # Mount source code for hot reloading
+      - ./src:/app/src:cached
+      - ./data/imports:/app/data/imports
+      # Prevent overwriting installed packages
+      - backend_venv:/opt/venv
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
+      # Debug port for remote debugging
+      - "5678:5678"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./src:/app/src:ro
-      - ./data/imports:/app/data/imports:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
+    networks:
+      - ar_network
 
-  # Frontend
+  # ============================================================================
+  # Frontend (Development with Hot Reload)
+  # ============================================================================
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    container_name: ar_frontend
+      target: deps
+    container_name: ar_frontend_dev
+    # Override for development with hot reload
+    command: npm run dev
+    working_dir: /app
     environment:
-      NEXT_PUBLIC_API_URL: http://backend:8000
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      WATCHPACK_POLLING: "true"
+    volumes:
+      # Mount source code for hot reloading
+      - ./src/frontend:/app/src/frontend:cached
+      - ./public:/app/public:cached
+      - ./package.json:/app/package.json:ro
+      - ./tsconfig.json:/app/tsconfig.json:ro
+      - ./next.config.js:/app/next.config.js:ro
+      - ./tailwind.config.js:/app/tailwind.config.js:ro
+      - ./postcss.config.js:/app/postcss.config.js:ro
+      # Use named volume for node_modules to avoid overwrite
+      - frontend_node_modules:/app/node_modules
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
     healthcheck:
@@ -78,53 +146,114 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
+    networks:
+      - ar_network
 
-  # Data Import Worker
+  # ============================================================================
+  # Data Import Worker (Development)
+  # ============================================================================
   import-worker:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: ar_import_worker
+      target: runner
+    container_name: ar_import_worker_dev
     command: python -m src.data_pipeline.scheduler.import_scheduler
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-ar_user}:${POSTGRES_PASSWORD:-ar_password}@postgres:5432/${POSTGRES_DB:-ar_control_hub}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ar_user}:${POSTGRES_PASSWORD:-ar_dev_password}@postgres:5432/${POSTGRES_DB:-ar_control_hub}
       REDIS_URL: redis://redis:6379
       IMPORT_DATA_PATH: /app/data/imports
+      IMPORT_SCHEDULE: ${IMPORT_SCHEDULE:-0 2 * * *}
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+    volumes:
+      - ./src:/app/src:cached
+      - ./data/imports:/app/data/imports
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./data/imports:/app/data/imports:ro
-      - ./src:/app/src:ro
+    restart: unless-stopped
+    networks:
+      - ar_network
 
-  # Email Worker
+  # ============================================================================
+  # Email Worker (Development)
+  # ============================================================================
   email-worker:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: ar_email_worker
+      target: runner
+    container_name: ar_email_worker_dev
     command: python -m src.services.workflow.email_worker
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-ar_user}:${POSTGRES_PASSWORD:-ar_password}@postgres:5432/${POSTGRES_DB:-ar_control_hub}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ar_user}:${POSTGRES_PASSWORD:-ar_dev_password}@postgres:5432/${POSTGRES_DB:-ar_control_hub}
       REDIS_URL: redis://redis:6379
-      SMTP_HOST: ${SMTP_HOST:-smtp.example.com}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@arcontrolhub.local}
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+    volumes:
+      - ./src:/app/src:cached
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./src:/app/src:ro
+    restart: unless-stopped
+    networks:
+      - ar_network
 
+  # ============================================================================
+  # MailHog - Email Testing (Development Only)
+  # ============================================================================
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: ar_mailhog_dev
+    ports:
+      - "1025:1025"   # SMTP server
+      - "8025:8025"   # Web UI
+    networks:
+      - ar_network
+
+  # ============================================================================
+  # Adminer - Database Management (Development Only)
+  # ============================================================================
+  adminer:
+    image: adminer:4.8.1
+    container_name: ar_adminer_dev
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+    networks:
+      - ar_network
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
 volumes:
   postgres_data:
+    name: ar_postgres_data_dev
   redis_data:
+    name: ar_redis_data_dev
+  backend_venv:
+    name: ar_backend_venv_dev
+  frontend_node_modules:
+    name: ar_frontend_node_modules_dev
 
+# ==============================================================================
+# Networks
+# ==============================================================================
 networks:
-  default:
-    name: ar_network
+  ar_network:
+    name: ar_network_dev
+    driver: bridge

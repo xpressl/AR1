@@ -1,0 +1,94 @@
+# ==============================================================================
+# AR Control Hub - Backend Dockerfile
+# Multi-stage build for Python/FastAPI application
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Stage 1: Builder - Install dependencies and create virtual environment
+# ------------------------------------------------------------------------------
+FROM python:3.11-slim AS builder
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Set working directory
+WORKDIR /build
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install -r requirements.txt
+
+# ------------------------------------------------------------------------------
+# Stage 2: Runner - Production image
+# ------------------------------------------------------------------------------
+FROM python:3.11-slim AS runner
+
+# Labels for image metadata
+LABEL maintainer="AR Control Hub Team" \
+      version="1.0.0" \
+      description="AR Control Hub Backend API"
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONFAULTHANDLER=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    APP_HOME=/app \
+    # Application defaults
+    API_PORT=8000 \
+    LOG_LEVEL=INFO \
+    ENVIRONMENT=production
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create non-root user for security
+RUN groupadd --gid 1000 appgroup && \
+    useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
+
+# Set working directory
+WORKDIR $APP_HOME
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Copy application code
+COPY --chown=appuser:appgroup src/ ./src/
+COPY --chown=appuser:appgroup alembic.ini* ./
+COPY --chown=appuser:appgroup pyproject.toml* ./
+
+# Create necessary directories
+RUN mkdir -p /app/data/imports /app/logs && \
+    chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose the API port
+EXPOSE 8000
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${API_PORT}/health || exit 1
+
+# Default command - run the API server
+CMD ["sh", "-c", "uvicorn src.api.main:app --host 0.0.0.0 --port ${API_PORT} --workers 4"]

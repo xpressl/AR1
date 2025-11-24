@@ -1,0 +1,81 @@
+{
+  "compilerOptions": {
+    // Target and module settings
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+
+    // Strict type checking - ALL strict options enabled
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+
+    // Additional type safety
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+
+    // Module interop
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+
+    // JSX for React
+    "jsx": "preserve",
+
+    // Output settings
+    "noEmit": true,
+    "incremental": true,
+
+    // Path aliases for clean imports
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/frontend/*"],
+      "@/components/*": ["./src/frontend/components/*"],
+      "@/lib/*": ["./src/frontend/lib/*"],
+      "@/hooks/*": ["./src/frontend/hooks/*"],
+      "@/stores/*": ["./src/frontend/stores/*"],
+      "@/types/*": ["./src/frontend/types/*"],
+      "@/styles/*": ["./src/frontend/styles/*"],
+      "@/app/*": ["./src/frontend/app/*"]
+    },
+
+    // Plugins
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+
+    // Skip lib check for faster builds
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/frontend/**/*.ts",
+    "src/frontend/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out",
+    "dist"
+  ]
+}
