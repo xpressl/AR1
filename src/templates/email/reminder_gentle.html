@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Reminder</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: #f9fafb;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+        }
+        .amount-box {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .amount {
+            font-size: 32px;
+            font-weight: bold;
+            color: #b45309;
+        }
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .invoice-table th, .invoice-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .invoice-table th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+        }
+        .past-due {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        .footer {
+            background-color: #1f2937;
+            color: #9ca3af;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            border-radius: 0 0 8px 8px;
+        }
+        .footer a {
+            color: #60a5fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{company_name}}</h1>
+        <p>Payment Reminder</p>
+    </div>
+
+    <div class="content">
+        <p>Dear {{contact_name}},</p>
+
+        <p>This is a friendly reminder that your account has an outstanding balance that requires your attention.</p>
+
+        <div class="amount-box">
+            <div>Total Amount Due</div>
+            <div class="amount">{{total_due}}</div>
+            <div style="color: #92400e; font-size: 14px;">Due: {{due_date}}</div>
+        </div>
+
+        {{#if invoices}}
+        <h3>Invoice Details</h3>
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Date</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each invoices}}
+                <tr>
+                    <td>{{invoice_number}}</td>
+                    <td>{{invoice_date}}</td>
+                    <td>{{due_date}}</td>
+                    <td>{{amount}}</td>
+                    <td class="{{#if is_past_due}}past-due{{/if}}">
+                        {{#if is_past_due}}{{days_past_due}} days past due{{else}}Current{{/if}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+        {{/if}}
+
+        <p>If you have already sent payment, please disregard this notice and accept our thanks.</p>
+
+        <p>If you have any questions about your account or need to discuss payment arrangements, please don't hesitate to contact us.</p>
+
+        <p>
+            <strong>Contact Us:</strong><br>
+            Phone: {{company_phone}}<br>
+            Email: {{company_email}}
+        </p>
+
+        <center>
+            <a href="{{payment_portal_url}}" class="btn">Pay Now</a>
+        </center>
+
+        <p style="margin-top: 30px;">Thank you for your business!</p>
+
+        <p>
+            Best regards,<br>
+            <strong>{{sender_name}}</strong><br>
+            Accounts Receivable<br>
+            {{company_name}}
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>{{company_name}} | {{company_address}}</p>
+        <p>
+            <a href="{{unsubscribe_url}}">Unsubscribe</a> |
+            <a href="{{preferences_url}}">Email Preferences</a>
+        </p>
+        <p>This email was sent regarding your account balance. Please do not reply directly to this email.</p>
+    </div>
+</body>
+</html>

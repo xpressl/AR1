@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urgent: Past Due Balance</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #dc2626;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .urgent-badge {
+            display: inline-block;
+            background-color: #fef2f2;
+            color: #dc2626;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .content {
+            background-color: #fef2f2;
+            padding: 30px;
+            border: 2px solid #fca5a5;
+        }
+        .amount-box {
+            background-color: #dc2626;
+            color: white;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .amount {
+            font-size: 36px;
+            font-weight: bold;
+        }
+        .days-overdue {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        .warning-box {
+            background-color: #fff;
+            border-left: 4px solid #dc2626;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+        .invoice-table th, .invoice-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #fca5a5;
+        }
+        .invoice-table th {
+            background-color: #fef2f2;
+            font-weight: 600;
+            color: #991b1b;
+        }
+        .past-due {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #dc2626;
+            color: white;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        .btn-secondary {
+            display: inline-block;
+            background-color: #6b7280;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-left: 10px;
+        }
+        .footer {
+            background-color: #1f2937;
+            color: #9ca3af;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            border-radius: 0 0 8px 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="urgent-badge">Urgent Action Required</span>
+        <h1>{{company_name}}</h1>
+        <p>Past Due Balance Notice</p>
+    </div>
+
+    <div class="content">
+        <p>Dear {{contact_name}},</p>
+
+        <p><strong>Our records indicate that your account has a significantly past due balance that requires your immediate attention.</strong></p>
+
+        <div class="amount-box">
+            <div>Past Due Amount</div>
+            <div class="amount">{{past_due_amount}}</div>
+            <div class="days-overdue">{{max_days_overdue}} days past due</div>
+        </div>
+
+        <div class="warning-box">
+            <strong>Important Notice:</strong> To avoid any interruption to your account and credit terms, please arrange payment immediately or contact us to discuss payment options.
+        </div>
+
+        {{#if invoices}}
+        <h3 style="color: #991b1b;">Past Due Invoices</h3>
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Original Date</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Days Overdue</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each invoices}}
+                <tr>
+                    <td>{{invoice_number}}</td>
+                    <td>{{invoice_date}}</td>
+                    <td>{{due_date}}</td>
+                    <td class="past-due">{{amount}}</td>
+                    <td class="past-due">{{days_past_due}} days</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+        {{/if}}
+
+        <h3>Payment Options</h3>
+        <ul>
+            <li><strong>Online:</strong> Pay securely through our payment portal</li>
+            <li><strong>Phone:</strong> Call us at {{company_phone}} to pay by card</li>
+            <li><strong>Check:</strong> Mail to {{company_address}}</li>
+            <li><strong>ACH/Wire:</strong> Contact us for bank details</li>
+        </ul>
+
+        <p>If you are experiencing financial difficulties, please contact us immediately. We may be able to arrange a payment plan that works for your situation.</p>
+
+        <center>
+            <a href="{{payment_portal_url}}" class="btn">Pay Now</a>
+            <a href="mailto:{{company_email}}?subject=Payment%20Arrangement%20Request" class="btn-secondary">Request Payment Plan</a>
+        </center>
+
+        <p style="margin-top: 30px;">
+            <strong>Contact Us Immediately:</strong><br>
+            Phone: {{company_phone}}<br>
+            Email: {{company_email}}<br>
+            Reference: Account #{{customer_id}}
+        </p>
+
+        <p>
+            Regards,<br>
+            <strong>{{sender_name}}</strong><br>
+            Accounts Receivable<br>
+            {{company_name}}
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>{{company_name}} | {{company_address}}</p>
+        <p>This is an important notice regarding your account. Prompt attention is required.</p>
+    </div>
+</body>
+</html>

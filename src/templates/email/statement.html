@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Statement</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f3f4f6;
+        }
+        .statement {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #1f2937;
+            color: white;
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .company-info h1 {
+            margin: 0 0 5px 0;
+            font-size: 24px;
+        }
+        .company-info p {
+            margin: 0;
+            opacity: 0.8;
+            font-size: 14px;
+        }
+        .statement-info {
+            text-align: right;
+        }
+        .statement-info h2 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+        }
+        .customer-section {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 30px;
+            background-color: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .customer-address h3, .account-summary h3 {
+            margin: 0 0 10px 0;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #6b7280;
+            letter-spacing: 0.5px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 20px 30px;
+            background-color: #f9fafb;
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-item .label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .summary-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        .summary-item.past-due .value {
+            color: #dc2626;
+        }
+        .aging-section {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .aging-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .aging-bar {
+            display: flex;
+            height: 30px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .aging-bar .segment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        .aging-bar .current { background-color: #22c55e; }
+        .aging-bar .days-1-30 { background-color: #84cc16; }
+        .aging-bar .days-31-60 { background-color: #eab308; }
+        .aging-bar .days-61-90 { background-color: #f97316; }
+        .aging-bar .days-90-plus { background-color: #dc2626; }
+        .aging-legend {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+        .aging-legend .item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .aging-legend .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        .invoice-section {
+            padding: 20px 30px;
+        }
+        .invoice-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .invoice-table th {
+            text-align: left;
+            padding: 10px;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .invoice-table td {
+            padding: 10px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 13px;
+        }
+        .invoice-table .amount {
+            text-align: right;
+            font-family: monospace;
+        }
+        .invoice-table .past-due {
+            color: #dc2626;
+        }
+        .invoice-table .credit {
+            color: #22c55e;
+        }
+        .invoice-table tfoot td {
+            font-weight: bold;
+            border-top: 2px solid #1f2937;
+            padding-top: 15px;
+        }
+        .payment-section {
+            padding: 20px 30px;
+            background-color: #eff6ff;
+            border-top: 1px solid #e5e7eb;
+        }
+        .payment-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .payment-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        .payment-option {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .payment-option .icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .payment-option .label {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .payment-option .detail {
+            font-size: 11px;
+            color: #6b7280;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .footer {
+            padding: 20px 30px;
+            background-color: #1f2937;
+            color: #9ca3af;
+            font-size: 12px;
+            text-align: center;
+        }
+        .footer a {
+            color: #60a5fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="statement">
+        <div class="header">
+            <div class="company-info">
+                <h1>{{company_name}}</h1>
+                <p>{{company_address}}</p>
+                <p>{{company_phone}} | {{company_email}}</p>
+            </div>
+            <div class="statement-info">
+                <h2>ACCOUNT STATEMENT</h2>
+                <p>Statement Date: {{statement_date}}</p>
+                <p>Account #: {{customer_id}}</p>
+            </div>
+        </div>
+
+        <div class="customer-section">
+            <div class="customer-address">
+                <h3>Bill To</h3>
+                <strong>{{customer_name}}</strong><br>
+                {{#if customer_contact}}{{customer_contact}}<br>{{/if}}
+                {{customer_address_line1}}<br>
+                {{#if customer_address_line2}}{{customer_address_line2}}<br>{{/if}}
+                {{customer_city}}, {{customer_state}} {{customer_zip}}
+            </div>
+            <div class="account-summary">
+                <h3>Account Summary</h3>
+                <p>Credit Limit: {{credit_limit}}</p>
+                <p>Terms: {{terms_code}}</p>
+                <p>Last Payment: {{last_payment_date}} ({{last_payment_amount}})</p>
+            </div>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="label">Current</div>
+                <div class="value">{{aging_current}}</div>
+            </div>
+            <div class="summary-item">
+                <div class="label">1-30 Days</div>
+                <div class="value">{{aging_1_30}}</div>
+            </div>
+            <div class="summary-item">
+                <div class="label">31-60 Days</div>
+                <div class="value">{{aging_31_60}}</div>
+            </div>
+            <div class="summary-item past-due">
+                <div class="label">61+ Days</div>
+                <div class="value">{{aging_61_plus}}</div>
+            </div>
+        </div>
+
+        <div class="aging-section">
+            <h3>Aging Overview</h3>
+            <div class="aging-bar">
+                <div class="segment current" style="width: {{aging_current_pct}}%">{{aging_current_pct}}%</div>
+                <div class="segment days-1-30" style="width: {{aging_1_30_pct}}%">{{aging_1_30_pct}}%</div>
+                <div class="segment days-31-60" style="width: {{aging_31_60_pct}}%">{{aging_31_60_pct}}%</div>
+                <div class="segment days-61-90" style="width: {{aging_61_90_pct}}%">{{aging_61_90_pct}}%</div>
+                <div class="segment days-90-plus" style="width: {{aging_90_plus_pct}}%">{{aging_90_plus_pct}}%</div>
+            </div>
+            <div class="aging-legend">
+                <div class="item"><div class="dot" style="background: #22c55e;"></div> Current</div>
+                <div class="item"><div class="dot" style="background: #84cc16;"></div> 1-30 Days</div>
+                <div class="item"><div class="dot" style="background: #eab308;"></div> 31-60 Days</div>
+                <div class="item"><div class="dot" style="background: #f97316;"></div> 61-90 Days</div>
+                <div class="item"><div class="dot" style="background: #dc2626;"></div> 90+ Days</div>
+            </div>
+        </div>
+
+        <div class="invoice-section">
+            <h3>Open Invoices</h3>
+            <table class="invoice-table">
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Date</th>
+                        <th>Due Date</th>
+                        <th>PO #</th>
+                        <th>Description</th>
+                        <th class="amount">Original</th>
+                        <th class="amount">Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each invoices}}
+                    <tr>
+                        <td>{{invoice_number}}</td>
+                        <td>{{invoice_date}}</td>
+                        <td class="{{#if is_past_due}}past-due{{/if}}">{{due_date}}</td>
+                        <td>{{po_number}}</td>
+                        <td>{{description}}</td>
+                        <td class="amount {{#if is_credit}}credit{{/if}}">{{original_amount}}</td>
+                        <td class="amount {{#if is_past_due}}past-due{{else if is_credit}}credit{{/if}}">{{open_balance}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="5"></td>
+                        <td class="amount">Total Balance:</td>
+                        <td class="amount">{{total_balance}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5"></td>
+                        <td class="amount past-due">Past Due:</td>
+                        <td class="amount past-due">{{past_due_amount}}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="payment-section">
+            <h3>Payment Options</h3>
+            <div class="payment-options">
+                <div class="payment-option">
+                    <div class="icon">💳</div>
+                    <div class="label">Pay Online</div>
+                    <div class="detail">Secure payment portal</div>
+                </div>
+                <div class="payment-option">
+                    <div class="icon">📞</div>
+                    <div class="label">Pay by Phone</div>
+                    <div class="detail">{{company_phone}}</div>
+                </div>
+                <div class="payment-option">
+                    <div class="icon">✉️</div>
+                    <div class="label">Mail Check</div>
+                    <div class="detail">Include account #</div>
+                </div>
+            </div>
+            <center style="margin-top: 20px;">
+                <a href="{{payment_portal_url}}" class="btn">Pay Now Online</a>
+            </center>
+        </div>
+
+        <div class="footer">
+            <p>Questions? Contact us at {{company_phone}} or {{company_email}}</p>
+            <p>Please reference Account #{{customer_id}} in all correspondence.</p>
+            <p style="margin-top: 15px;">
+                <a href="{{unsubscribe_url}}">Unsubscribe</a> |
+                <a href="{{preferences_url}}">Email Preferences</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
