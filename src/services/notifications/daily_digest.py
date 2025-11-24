@@ -353,12 +353,15 @@ class DailyDigestService:
 
     def render_digest(self, data: Dict) -> str:
         """Render the digest HTML."""
+        from jinja2 import Environment
+
         # Add format_number filter
         def format_number(value):
             return f"{value:,.2f}" if value else "0.00"
 
-        template = Template(self.DIGEST_TEMPLATE)
-        template.environment.filters['format_number'] = format_number
+        env = Environment()
+        env.filters['format_number'] = format_number
+        template = env.from_string(self.DIGEST_TEMPLATE)
 
         return template.render(**data)
 

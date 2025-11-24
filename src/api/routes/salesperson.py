@@ -2,10 +2,10 @@
 Salesperson Portal API Routes - Phase 2
 Read-only access to AR data for assigned customers.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, case
-from typing import Optional
+from typing import Optional, List, Dict
 from datetime import date
 
 from src.db.connection import get_db
@@ -16,23 +16,39 @@ from src.models.alert import Alert
 router = APIRouter()
 
 
+async def get_current_salesperson_id(
+    x_salesperson_id: Optional[str] = Header(None, alias="X-Salesperson-ID"),
+    salesperson_id: Optional[str] = Query(None)
+) -> Optional[str]:
+    """
+    Get current salesperson ID from header or query param.
+    In production, this would be extracted from JWT token.
+    """
+    return x_salesperson_id or salesperson_id
+
+
 @router.get("/customers")
 async def get_salesperson_customers(
-    salesperson_id: Optional[str] = None,
+    current_salesperson: Optional[str] = Depends(get_current_salesperson_id),
     db: AsyncSession = Depends(get_db)
-):
+) -> List[Dict]:
     """
-    Get customers assigned to a salesperson with AR summary.
-    If salesperson_id not provided, returns all customers (for demo).
+    Get customers assigned to the authenticated salesperson.
+    Requires salesperson authentication via header or query param.
     """
-    # Base customer query
-    query = select(Customer)
+    # Security: Require salesperson_id for non-admin access
+    # In production, verify against JWT claims
+    if not current_salesperson:
+        raise HTTPException(
+            status_code=401,
+            detail="Salesperson authentication required. Provide X-Salesperson-ID header."
+        )
 
-    if salesperson_id:
-        query = query.where(Customer.salesperson_id == salesperson_id)
-
-    query = query.where(Customer.status == 'Active')
-    query = query.order_by(Customer.name)
+    # Filter by authenticated salesperson only
+    query = select(Customer).where(
+        Customer.salesperson_id == current_salesperson,
+        Customer.status == 'Active'
+    ).order_by(Customer.name)
 
     result = await db.execute(query)
     customers = result.scalars().all()
@@ -104,16 +120,23 @@ async def get_salesperson_customers(
 
 @router.get("/stats")
 async def get_salesperson_stats(
-    salesperson_id: Optional[str] = None,
+    current_salesperson: Optional[str] = Depends(get_current_salesperson_id),
     db: AsyncSession = Depends(get_db)
-):
+) -> Dict:
     """Get aggregated stats for salesperson's accounts."""
+    if not current_salesperson:
+        raise HTTPException(
+            status_code=401,
+            detail="Salesperson authentication required. Provide X-Salesperson-ID header."
+        )
+
     today = date.today()
 
-    # Build customer filter
-    customer_filter = Customer.status == 'Active'
-    if salesperson_id:
-        customer_filter = and_(customer_filter, Customer.salesperson_id == salesperson_id)
+    # Filter by authenticated salesperson only
+    customer_filter = and_(
+        Customer.status == 'Active',
+        Customer.salesperson_id == current_salesperson
+    )
 
     # Get customer IDs
     customer_ids_result = await db.execute(
@@ -186,17 +209,24 @@ async def get_salesperson_stats(
 @router.get("/customer/{customer_id}")
 async def get_customer_detail_readonly(
     customer_id: int,
-    salesperson_id: Optional[str] = None,
+    current_salesperson: Optional[str] = Depends(get_current_salesperson_id),
     db: AsyncSession = Depends(get_db)
-):
+) -> Dict:
     """
     Get read-only customer detail for salesperson portal.
-    Validates that customer is assigned to the salesperson.
+    Validates that customer is assigned to the authenticated salesperson.
     """
-    query = select(Customer).where(Customer.id == customer_id)
+    if not current_salesperson:
+        raise HTTPException(
+            status_code=401,
+            detail="Salesperson authentication required. Provide X-Salesperson-ID header."
+        )
 
-    if salesperson_id:
-        query = query.where(Customer.salesperson_id == salesperson_id)
+    # Only allow access to customers assigned to this salesperson
+    query = select(Customer).where(
+        Customer.id == customer_id,
+        Customer.salesperson_id == current_salesperson
+    )
 
     result = await db.execute(query)
     customer = result.scalar_one_or_none()
