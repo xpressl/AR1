@@ -1,0 +1,68 @@
+Subject: AR Control Hub Demo - Production-Ready System Showcase
+
+Hi [Stakeholder Name],
+
+I'm excited to invite you to a demonstration of the AR Control Hub - our new accounts receivable management system that's now production-ready after 18 weeks of development.
+
+**What:** AR Control Hub Live Demonstration
+**When:** [Proposed Date/Time Options]
+  - Option 1: [Day], [Date] at 10:00 AM - 10:45 AM
+  - Option 2: [Day], [Date] at 2:00 PM - 2:45 PM
+  - Option 3: [Day], [Date] at 10:00 AM - 10:45 AM
+
+**Where:** [Conference Room / Zoom Link]
+**Duration:** 30 minutes (demo) + 15 minutes (Q&A)
+
+**Who Should Attend:**
+✓ AR Team (Sarah, etc.)
+✓ Finance Leadership (CFO, Finance VPs)
+✓ IT Management
+✓ Sales Managers
+✓ Anyone interested in AR operations
+
+**What You'll See:**
+
+🎯 **Automated Prioritization** - No more manual spreadsheet sorting. The system prioritizes accounts automatically based on risk factors.
+
+📊 **Real-Time Dashboard** - Complete AR health visibility with aging breakdown, DSO tracking, and active alerts.
+
+💰 **Cash Flow Forecasting** - 8-week rolling forecast helping you answer "How much cash are we collecting this month?"
+
+📈 **DSO Analysis** - Track Days Sales Outstanding with trending and problem account identification.
+
+👤 **Customer 360 View** - Everything about a customer in one place - invoices, payments, notes, alerts.
+
+📧 **Promise Tracking** - Never miss a broken promise again. Automatic detection and follow-up.
+
+💼 **Salesperson Portal** - Self-service AR visibility for the sales team.
+
+**Business Impact:**
+- Save 2+ hours/day on collection prioritization
+- Reduce DSO from 38 to 35 days (target)
+- Improve collection rates by 15%
+- Free up $100k+ in working capital
+- **Estimated Annual Value: $172,000**
+
+**What Happens After the Demo:**
+1. Gather your feedback and questions
+2. Begin User Acceptance Testing (2 weeks)
+3. Conduct training sessions (3 weeks)
+4. Go-Live!
+
+**Please RSVP** by [Date] so I can prepare materials and reserve the conference room.
+
+I've attached a one-page feature summary for your review. Looking forward to showing you what we've built!
+
+Best regards,
+[Your Name]
+[Title]
+[Contact Information]
+
+---
+
+**Attachments:**
+- AR_CONTROL_HUB_FEATURE_SUMMARY.pdf (one-page overview)
+
+**Questions?** Feel free to reach out anytime.
+
+P.S. - If you can't attend but want to see the demo, I'll send a recording link afterward.
