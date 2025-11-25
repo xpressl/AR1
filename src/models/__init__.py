@@ -14,6 +14,14 @@ from src.models.import_run import ImportRun
 from src.models.credit_hold import CreditHold
 from src.models.notification import Notification
 
+# Phase 4 models
+from src.models.dispute_attachment import DisputeAttachment
+from src.models.dispute_history import DisputeHistory
+from src.models.email_template import EmailTemplate
+from src.models.template_usage_log import TemplateUsageLog
+from src.models.batch_operation import BatchOperation
+from src.models.export_history import ExportHistory
+
 __all__ = [
     "User",
     "Customer",
@@ -27,5 +35,12 @@ __all__ = [
     "EmailLog",
     "ImportRun",
     "CreditHold",
-    "Notification"
+    "Notification",
+    # Phase 4
+    "DisputeAttachment",
+    "DisputeHistory",
+    "EmailTemplate",
+    "TemplateUsageLog",
+    "BatchOperation",
+    "ExportHistory"
 ]

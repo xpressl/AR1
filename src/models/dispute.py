@@ -28,6 +28,8 @@ class Dispute(Base):
     # Relationships
     customer = relationship("Customer", back_populates="disputes")
     invoice = relationship("Invoice", back_populates="disputes")
+    attachments = relationship("DisputeAttachment", back_populates="dispute", cascade="all, delete-orphan")
+    history = relationship("DisputeHistory", back_populates="dispute", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Dispute(id={self.id}, reason='{self.reason_code}', status='{self.status}')>"
