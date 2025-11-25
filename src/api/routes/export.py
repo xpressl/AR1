@@ -13,7 +13,7 @@ from datetime import date
 from src.db.connection import get_db
 from src.services.export.export_service import ExportService, ExportFormatter
 from src.models import Customer, Invoice
-from src.api.dependencies import get_current_user
+from src.api.dependencies import get_current_user_dict
 
 router = APIRouter(prefix="/api/v1/export", tags=["export"])
 
@@ -23,7 +23,7 @@ async def export_customers(
     format: str = Query("xlsx", regex="^(xlsx|csv|pdf)$"),
     status: Optional[str] = None,
     salesperson_id: Optional[str] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_dict),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -86,7 +86,7 @@ async def export_invoices(
     status: Optional[str] = None,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_dict),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -155,7 +155,7 @@ async def export_aging_report(
     format: str = Query("xlsx", regex="^(xlsx|csv|pdf)$"),
     customer_id: Optional[str] = None,
     min_balance: Optional[float] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_dict),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -209,7 +209,7 @@ async def export_aging_report(
 async def get_export_history(
     limit: int = Query(50, ge=1, le=200),
     export_type: Optional[str] = None,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_dict),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -231,7 +231,7 @@ async def get_export_history(
 @router.post("/cleanup")
 async def cleanup_old_exports(
     days: int = Query(7, ge=1, le=90, description="Delete exports older than this many days"),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_dict),
     db: AsyncSession = Depends(get_db)
 ):
     """

@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from src.db.connection import get_db
 from src.services.batch.batch_service import BatchService
-from src.api.dependencies import get_current_user
+from src.api.dependencies import get_current_user_dict
 
 router = APIRouter(prefix="/api/v1/batch", tags=["batch"])
 
@@ -46,7 +46,7 @@ class BulkNoteRequest(BaseModel):
 @router.post("/send-emails")
 async def send_bulk_emails(
     request: BulkEmailRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_dict),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -93,7 +93,7 @@ async def send_bulk_emails(
 @router.post("/assign-tasks")
 async def assign_bulk_tasks(
     request: BulkTaskRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_dict),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -143,7 +143,7 @@ async def assign_bulk_tasks(
 @router.post("/update-status")
 async def update_bulk_status(
     request: BulkStatusRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_dict),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -192,7 +192,7 @@ async def update_bulk_status(
 @router.post("/add-notes")
 async def add_bulk_notes(
     request: BulkNoteRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_dict),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -246,7 +246,7 @@ async def add_bulk_notes(
 @router.get("/status/{batch_id}")
 async def get_batch_status(
     batch_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_dict),
     db: AsyncSession = Depends(get_db)
 ):
     """

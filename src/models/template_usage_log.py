@@ -9,7 +9,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 
-from src.db.base import Base
+from src.db.connection import Base
 
 
 class TemplateUsageLog(Base):
