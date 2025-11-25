@@ -12,6 +12,7 @@ from src.models.dispute import Dispute
 from src.models.email_log import EmailLog
 from src.models.import_run import ImportRun
 from src.models.credit_hold import CreditHold
+from src.models.notification import Notification
 
 __all__ = [
     "User",
@@ -25,5 +26,6 @@ __all__ = [
     "Dispute",
     "EmailLog",
     "ImportRun",
-    "CreditHold"
+    "CreditHold",
+    "Notification"
 ]

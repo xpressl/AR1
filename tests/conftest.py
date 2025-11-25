@@ -7,18 +7,19 @@ from datetime import date, datetime, timedelta
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
 
-from src.db.base import Base
-from src.models.customer import Customer
-from src.models.invoice import Invoice
-from src.models.payment import Payment
-from src.models.note import Note
-from src.models.alert import Alert
-from src.models.user import User
-from src.models.task import Task
+from src.db.connection import Base
+
+# Import ALL models to register them with Base.metadata
+# This must happen before Base.metadata.create_all() is called
+import src.models  # This imports all models via __init__.py
+
+# Also import specific models we use in fixtures
+from src.models import Customer, Invoice, Payment, Note, Alert, User, Task
 
 
-# Test database URL (use in-memory SQLite for speed)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# Test database URL (use file-based SQLite with shared cache for async)
+# In-memory doesn't work well with async/multiple connections
+TEST_DATABASE_URL = "sqlite+aiosqlite:///test.db"
 
 
 @pytest.fixture(scope="session")
@@ -32,11 +33,21 @@ def event_loop():
 @pytest.fixture(scope="function")
 async def db_engine():
     """Create test database engine."""
+    # Ensure all models are loaded before creating tables
+    # Import here to guarantee they're registered with Base.metadata
+    from src.models import (
+        User, Customer, Invoice, Payment, PaymentApplication,
+        Note, Task, Alert, Dispute, EmailLog, ImportRun, CreditHold, Notification
+    )
+
     engine = create_async_engine(
         TEST_DATABASE_URL,
         poolclass=NullPool,
         echo=False
     )
+
+    # Debug: Print registered tables
+    print(f"\nRegistered tables in Base.metadata: {list(Base.metadata.tables.keys())}")
 
     # Create all tables
     async with engine.begin() as conn:
@@ -49,6 +60,14 @@ async def db_engine():
         await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
+
+    # Clean up test database file
+    import os
+    try:
+        if os.path.exists("test.db"):
+            os.remove("test.db")
+    except Exception:
+        pass  # Ignore cleanup errors
 
 
 @pytest.fixture(scope="function")
